@@ -74,6 +74,28 @@ The project follows 10 sequential steps. Reference `project-plan.md` for the ful
 
 - `st.file_uploader` returns `None` on first load — always check before processing
 - `pd.read_csv()` can fail on encoding — use `encoding='utf-8'` with fallback to `'latin-1'`
-- Plotly charts need `st.plotly_chart(fig, use_container_width=True)` to render properly
-- Streamlit reruns the entire script on every interaction — keep expensive ops cached
-- `df.describe()` only includes numeric columns by default — pass `include='all'` for full stats
+- Plotly charts need `st.plotly_chart(fig, use_container_width=True)` for responsive layout
+- `df.describe()` only covers numeric columns by default — use `include='all'` for full profile
+- Large CSVs can slow down reruns — wrap parsing in `st.cache_data`
+
+## Progress Tracker
+
+Tracks what has been completed so far. Update after each step.
+
+- [x] Step 1 — Project setup & hello world
+- [x] Step 2 — CSV upload & data preview
+- [x] Step 3 — Summary statistics & data profiling
+- [ ] Step 4 — Automated visualizations
+- [ ] Step 5 — Interactive scatter plot & user controls
+- [ ] Step 6 — Filtering, sorting & data export
+- [ ] Step 7 — Missing data analysis & time series
+- [ ] Step 8 — Polish, layout & UX
+- [ ] Step 9 — Deploy to Streamlit Cloud
+- [ ] Step 10 — Document & portfolio-ify
+
+## Helper Module Guidelines
+
+- Keep utility functions **pure** (no Streamlit imports inside `utils/` files) — this makes them testable independently
+- Add `st.cache_data` wrappers in `app.py`, not in the utility modules
+- Each utility file should focus on one responsibility (profiling, charts, filters)
+- Return `None` from helper functions when there's no data to process (e.g., no numeric columns) — let `app.py` decide how to display the empty state
