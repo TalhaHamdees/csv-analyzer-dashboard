@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils.data_profiler import get_column_info, get_numeric_stats, get_categorical_stats
+from utils.visualizations import create_histogram, create_bar_chart, create_correlation_heatmap
 
 
 # --- Cached wrappers ---
@@ -19,6 +20,21 @@ def cached_numeric_stats(df):
 @st.cache_data
 def cached_categorical_stats(df):
     return get_categorical_stats(df)
+
+
+@st.cache_data
+def cached_histogram(df, column_name):
+    return create_histogram(df, column_name)
+
+
+@st.cache_data
+def cached_bar_chart(df, column_name):
+    return create_bar_chart(df, column_name)
+
+
+@st.cache_data
+def cached_correlation_heatmap(df):
+    return create_correlation_heatmap(df)
 
 
 # Page configuration — must be the first Streamlit command
@@ -109,3 +125,49 @@ if uploaded_file is not None:
             st.info("No categorical columns found in this dataset.")
     except Exception as error:
         st.error(f"Could not calculate categorical statistics: {error}")
+
+    # --- Automated Visualizations (Step 4) ---
+    st.subheader("Automated Visualizations")
+
+    # -- Histograms for numeric columns --
+    numeric_columns = dataframe.select_dtypes(include="number").columns.tolist()
+
+    if numeric_columns:
+        st.markdown("#### Distributions")
+        # Display histograms two per row for a clean grid layout
+        for i in range(0, len(numeric_columns), 2):
+            chart_cols = st.columns(2)
+            for j, chart_col in enumerate(chart_cols):
+                if i + j < len(numeric_columns):
+                    column_name = numeric_columns[i + j]
+                    try:
+                        fig = cached_histogram(dataframe, column_name)
+                        chart_col.plotly_chart(fig, use_container_width=True)
+                    except Exception as error:
+                        chart_col.error(f"Could not create histogram for {column_name}: {error}")
+
+    # -- Bar charts for categorical columns --
+    categorical_columns = dataframe.select_dtypes(exclude="number").columns.tolist()
+
+    if categorical_columns:
+        st.markdown("#### Value Counts")
+        for i in range(0, len(categorical_columns), 2):
+            chart_cols = st.columns(2)
+            for j, chart_col in enumerate(chart_cols):
+                if i + j < len(categorical_columns):
+                    column_name = categorical_columns[i + j]
+                    try:
+                        fig = cached_bar_chart(dataframe, column_name)
+                        if fig is not None:
+                            chart_col.plotly_chart(fig, use_container_width=True)
+                    except Exception as error:
+                        chart_col.error(f"Could not create bar chart for {column_name}: {error}")
+
+    # -- Correlation heatmap --
+    try:
+        heatmap_fig = cached_correlation_heatmap(dataframe)
+        if heatmap_fig is not None:
+            st.markdown("#### Correlation Matrix")
+            st.plotly_chart(heatmap_fig, use_container_width=True)
+    except Exception as error:
+        st.error(f"Could not create correlation heatmap: {error}")
