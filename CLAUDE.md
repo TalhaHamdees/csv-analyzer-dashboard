@@ -20,14 +20,16 @@ This project is being built **step-by-step for learning purposes**. The develope
 ## Project Structure
 
 ```
-csv-analyzer/
+csv-analyzer-dashboard/
 ├── app.py                 # Main Streamlit application
-├── requirements.txt       # Python dependencies with versions
+├── requirements.txt       # Python dependencies (direct only)
 ├── .gitignore
 ├── README.md
 ├── CLAUDE.md              # This file
-└── utils/                 # Helper modules (added in later steps)
-    ├── data_profiler.py   # Column type detection, stats
+├── .streamlit/
+│   └── config.toml        # Theme and server settings
+└── utils/                 # Helper modules
+    ├── data_profiler.py   # Column type detection, stats, datetime detection
     ├── visualizations.py  # Chart generation functions
     └── filters.py         # Dynamic filtering logic
 ```
@@ -90,7 +92,7 @@ Tracks what has been completed so far. Update after each step.
 - [x] Step 6 — Filtering, sorting & data export
 - [x] Step 7 — Missing data analysis & time series
 - [x] Step 8 — Polish, layout & UX
-- [ ] Step 9 — Deploy to Streamlit Cloud
+- [x] Step 9 — Deploy to Streamlit Cloud
 - [ ] Step 10 — Document & portfolio-ify
 
 ## Helper Module Guidelines
