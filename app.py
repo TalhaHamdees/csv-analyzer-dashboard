@@ -1,3 +1,11 @@
+"""CSV Analyzer Dashboard — main Streamlit application.
+
+Upload any CSV file and get instant insights: summary statistics,
+automated visualizations, interactive scatter plots, missing data
+analysis, and time series detection. Organized into tabbed sections
+for easy navigation.
+"""
+
 import streamlit as st
 import pandas as pd
 from utils.data_profiler import get_column_info, get_numeric_stats, get_categorical_stats, detect_datetime_columns

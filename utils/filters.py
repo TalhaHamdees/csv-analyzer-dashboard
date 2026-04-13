@@ -1,3 +1,9 @@
+"""Filtering, sorting, and export utilities for the data preview.
+
+Pure pandas functions for applying user-driven filters, sorting columns,
+and converting DataFrames to downloadable CSV bytes.
+"""
+
 import pandas as pd
 
 

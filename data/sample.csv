@@ -1,0 +1,31 @@
+Date,Name,City,Department,Age,Salary,Sales,Rating
+2024-01-05,Alice,New York,Engineering,29,85000,12500,4.5
+2024-01-12,Bob,London,Marketing,34,72000,9800,3.8
+2024-01-19,Charlie,New York,Engineering,41,110000,15200,4.9
+2024-01-26,Diana,Paris,Sales,27,65000,22000,4.2
+2024-02-02,Eve,London,Engineering,33,95000,,4.7
+2024-02-09,Frank,Tokyo,Marketing,38,78000,11000,3.5
+2024-02-16,Grace,New York,Sales,25,60000,19500,4.0
+2024-02-23,Henry,Paris,Engineering,45,120000,14000,
+2024-03-01,Ivy,Tokyo,Marketing,31,70000,8500,3.9
+2024-03-08,Jack,London,Sales,28,,21000,4.3
+2024-03-15,Karen,New York,Engineering,36,98000,13500,4.6
+2024-03-22,Leo,Paris,Marketing,42,82000,10200,
+2024-03-29,Maya,Tokyo,Sales,30,68000,24000,4.1
+2024-04-05,Nathan,London,Engineering,39,105000,16000,4.8
+2024-04-12,Olivia,New York,Marketing,26,63000,,3.7
+2024-04-19,Peter,Paris,Sales,35,75000,20000,4.4
+2024-04-26,Quinn,Tokyo,Engineering,44,115000,14500,4.9
+2024-05-03,Rachel,London,Marketing,29,71000,9200,3.6
+2024-05-10,Sam,New York,Sales,32,69000,23000,4.2
+2024-05-17,Tina,Paris,Engineering,37,100000,15800,
+2024-05-24,Uma,Tokyo,Marketing,,76000,10800,3.8
+2024-05-31,Victor,London,Sales,40,73000,21500,4.5
+2024-06-07,Wendy,New York,Engineering,28,88000,12800,4.3
+2024-06-14,Xavier,Paris,Marketing,33,74000,,3.9
+2024-06-21,Yara,Tokyo,Sales,36,71000,25000,4.7
+2024-06-28,Zack,London,Engineering,43,112000,16500,4.8
+2024-07-05,Alice,New York,Marketing,30,77000,11500,4.0
+2024-07-12,Bob,Paris,Sales,35,70000,19000,4.1
+2024-07-19,Charlie,Tokyo,Engineering,47,125000,17000,4.9
+2024-07-26,Diana,London,Marketing,28,66000,9500,3.7

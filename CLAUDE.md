@@ -25,9 +25,12 @@ csv-analyzer-dashboard/
 ├── requirements.txt       # Python dependencies (direct only)
 ├── .gitignore
 ├── README.md
+├── LICENSE                # MIT License
 ├── CLAUDE.md              # This file
 ├── .streamlit/
 │   └── config.toml        # Theme and server settings
+├── data/
+│   └── sample.csv         # Sample dataset for testing
 └── utils/                 # Helper modules
     ├── data_profiler.py   # Column type detection, stats, datetime detection
     ├── visualizations.py  # Chart generation functions
@@ -93,7 +96,7 @@ Tracks what has been completed so far. Update after each step.
 - [x] Step 7 — Missing data analysis & time series
 - [x] Step 8 — Polish, layout & UX
 - [x] Step 9 — Deploy to Streamlit Cloud
-- [ ] Step 10 — Document & portfolio-ify
+- [x] Step 10 — Document & portfolio-ify
 
 ## Helper Module Guidelines
 

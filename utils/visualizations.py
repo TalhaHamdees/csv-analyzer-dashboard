@@ -1,3 +1,10 @@
+"""Chart generation functions using Plotly Express.
+
+Each function takes a DataFrame and returns a Plotly figure (or None when
+there is no applicable data). No Streamlit imports — keeps visualization
+logic separate from the UI layer.
+"""
+
 import pandas as pd
 import plotly.express as px
 

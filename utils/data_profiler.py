@@ -1,3 +1,9 @@
+"""Data profiling utilities for column analysis and datetime detection.
+
+Pure pandas functions with no Streamlit dependencies, so they can be
+tested independently. Caching is handled by wrapper functions in app.py.
+"""
+
 import pandas as pd
 
 
