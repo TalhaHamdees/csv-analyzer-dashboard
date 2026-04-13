@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from utils.data_profiler import get_column_info, get_numeric_stats, get_categorical_stats
 from utils.visualizations import create_histogram, create_bar_chart, create_correlation_heatmap, create_scatter_plot
+from utils.filters import get_filterable_columns, apply_filters, sort_dataframe, convert_df_to_csv
 
 
 # --- Cached wrappers ---
@@ -42,6 +43,16 @@ def cached_scatter_plot(df, x_col, y_col, color_col=None):
     return create_scatter_plot(df, x_col, y_col, color_col)
 
 
+@st.cache_data
+def cached_filterable_columns(df):
+    return get_filterable_columns(df)
+
+
+@st.cache_data
+def cached_convert_csv(df):
+    return convert_df_to_csv(df)
+
+
 # Page configuration — must be the first Streamlit command
 st.set_page_config(
     page_title="CSV Analyzer Dashboard",
@@ -73,9 +84,88 @@ if uploaded_file is not None:
     rows, columns = dataframe.shape
     st.success(f"Loaded **{rows}** rows and **{columns}** columns.")
 
-    # Interactive table — users can sort and scroll
+    # --- Data Filters (Step 6) ---
+    st.sidebar.header("Data Filters")
+
+    # Find which columns are eligible for filtering
+    filterable = cached_filterable_columns(dataframe)
+    all_filterable = filterable["numeric"] + filterable["categorical"]
+
+    # Let the user pick which columns to filter on
+    selected_filter_columns = st.sidebar.multiselect(
+        "Choose columns to filter",
+        options=all_filterable,
+        default=[],
+    )
+
+    # Build filter widgets for each selected column
+    numeric_filters = {}
+    categorical_filters = {}
+
+    for col in selected_filter_columns:
+        if col in filterable["numeric"]:
+            min_val = float(dataframe[col].min())
+            max_val = float(dataframe[col].max())
+            # Skip slider if column has only one unique value (slider would error)
+            if min_val < max_val:
+                selected_range = st.sidebar.slider(
+                    f"{col} range",
+                    min_value=min_val,
+                    max_value=max_val,
+                    value=(min_val, max_val),
+                    key=f"filter_{col}",
+                )
+                numeric_filters[col] = selected_range
+        elif col in filterable["categorical"]:
+            unique_values = dataframe[col].dropna().unique().tolist()
+            selected_values = st.sidebar.multiselect(
+                f"{col} values",
+                options=unique_values,
+                default=[],
+                key=f"filter_{col}",
+            )
+            categorical_filters[col] = selected_values
+
+    # Apply all active filters to get the filtered view
+    filtered_dataframe = apply_filters(dataframe, numeric_filters, categorical_filters)
+
+    # --- Data Preview with sorting and export (Step 6) ---
     st.subheader("Data Preview")
-    st.dataframe(dataframe)
+    st.write(f"Showing **{len(filtered_dataframe):,}** of **{rows:,}** rows")
+
+    # Sorting controls
+    sort_col1, sort_col2 = st.columns([3, 1])
+    with sort_col1:
+        sort_column = st.selectbox(
+            "Sort by",
+            options=["None"] + dataframe.columns.tolist(),
+            index=0,
+        )
+    with sort_col2:
+        sort_direction = st.radio(
+            "Direction",
+            options=["Ascending", "Descending"],
+            horizontal=True,
+        )
+
+    # Apply sorting
+    sort_by = None if sort_column == "None" else sort_column
+    ascending = sort_direction == "Ascending"
+    display_dataframe = sort_dataframe(filtered_dataframe, sort_by, ascending)
+
+    # Show the filtered and sorted table
+    if len(display_dataframe) == 0:
+        st.warning("No rows match the current filters.")
+    st.dataframe(display_dataframe, use_container_width=True)
+
+    # Download button for filtered data
+    csv_bytes = cached_convert_csv(display_dataframe)
+    st.download_button(
+        label="Download filtered data as CSV",
+        data=csv_bytes,
+        file_name="filtered_data.csv",
+        mime="text/csv",
+    )
 
     # Collapsible section for a quick peek at the first 5 rows
     with st.expander("Show raw data (first 5 rows)"):
