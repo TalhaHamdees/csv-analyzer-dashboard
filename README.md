@@ -6,8 +6,7 @@
 
 A Streamlit web app that lets you upload any CSV file and instantly get insights, visualizations, and summary statistics — no coding required.
 
-<!-- Replace with your deployed app URL after deploying to Streamlit Cloud -->
-<!-- [**Try the live demo**](https://your-app-name.streamlit.app) -->
+[**Try the live demo**](https://talhahamdees-csv-analyzer-dashboard.streamlit.app)
 
 ## What It Does
 
