@@ -89,7 +89,7 @@ Tracks what has been completed so far. Update after each step.
 - [x] Step 5 — Interactive scatter plot & user controls
 - [x] Step 6 — Filtering, sorting & data export
 - [x] Step 7 — Missing data analysis & time series
-- [ ] Step 8 — Polish, layout & UX
+- [x] Step 8 — Polish, layout & UX
 - [ ] Step 9 — Deploy to Streamlit Cloud
 - [ ] Step 10 — Document & portfolio-ify
 

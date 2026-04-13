@@ -152,232 +152,236 @@ if uploaded_file is not None:
     # Apply all active filters to get the filtered view
     filtered_dataframe = apply_filters(dataframe, numeric_filters, categorical_filters)
 
-    # --- Data Preview with sorting and export (Step 6) ---
-    st.subheader("Data Preview")
-    st.write(f"Showing **{len(filtered_dataframe):,}** of **{rows:,}** rows")
+    # --- Shared variables used across multiple tabs ---
+    numeric_columns = dataframe.select_dtypes(include="number").columns.tolist()
+    categorical_columns = dataframe.select_dtypes(exclude="number").columns.tolist()
+    datetime_columns = cached_detect_datetime_columns(dataframe)
+    total_missing = dataframe.isnull().sum().sum()
+    total_cells = rows * columns
+    missing_percent = (total_missing / total_cells * 100) if total_cells > 0 else 0
+    duplicate_rows = dataframe.duplicated().sum()
 
-    # Sorting controls
-    sort_col1, sort_col2 = st.columns([3, 1])
-    with sort_col1:
-        sort_column = st.selectbox(
-            "Sort by",
-            options=["None"] + dataframe.columns.tolist(),
-            index=0,
-        )
-    with sort_col2:
-        sort_direction = st.radio(
-            "Direction",
-            options=["Ascending", "Descending"],
-            horizontal=True,
-        )
-
-    # Apply sorting
-    sort_by = None if sort_column == "None" else sort_column
-    ascending = sort_direction == "Ascending"
-    display_dataframe = sort_dataframe(filtered_dataframe, sort_by, ascending)
-
-    # Show the filtered and sorted table
-    if len(display_dataframe) == 0:
-        st.warning("No rows match the current filters.")
-    st.dataframe(display_dataframe, use_container_width=True)
-
-    # Download button for filtered data
-    csv_bytes = cached_convert_csv(display_dataframe)
-    st.download_button(
-        label="Download filtered data as CSV",
-        data=csv_bytes,
-        file_name="filtered_data.csv",
-        mime="text/csv",
-    )
-
-    # Collapsible section for a quick peek at the first 5 rows
-    with st.expander("Show raw data (first 5 rows)"):
-        st.table(dataframe.head())
-
-    # --- Summary Statistics (Step 3) ---
-
-    # -- Metric cards --
+    # --- Summary metrics — always visible above tabs ---
     st.subheader("Summary Statistics")
     try:
-        total_missing = dataframe.isnull().sum().sum()
-        total_cells = rows * columns
-        # Guard against division by zero when the DataFrame has no cells
-        missing_percent = (total_missing / total_cells * 100) if total_cells > 0 else 0
-        duplicate_rows = dataframe.duplicated().sum()
-
-        # Four side-by-side cards for the key numbers
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Rows", f"{rows:,}")
-        col2.metric("Columns", f"{columns:,}")
-        col3.metric("Missing Cells", f"{total_missing:,} ({missing_percent:.1f}%)")
-        col4.metric("Duplicate Rows", f"{duplicate_rows:,}")
+        metric_col1, metric_col2, metric_col3, metric_col4 = st.columns(4)
+        metric_col1.metric("Rows", f"{rows:,}")
+        metric_col2.metric("Columns", f"{columns:,}")
+        metric_col3.metric("Missing Cells", f"{total_missing:,} ({missing_percent:.1f}%)")
+        metric_col4.metric("Duplicate Rows", f"{duplicate_rows:,}")
     except Exception as error:
         st.error(f"Could not calculate summary metrics: {error}")
 
-    # -- Column Details --
-    st.subheader("Column Details")
-    try:
-        column_info = cached_column_info(dataframe)
-        st.dataframe(column_info, use_container_width=True)
-    except Exception as error:
-        st.error(f"Could not generate column details: {error}")
+    # --- Organize content into tabs (Step 8) ---
+    tab_data, tab_stats, tab_viz, tab_explore = st.tabs(
+        ["Data", "Statistics", "Visualizations", "Explore"]
+    )
 
-    # -- Numeric Column Statistics --
-    st.subheader("Numeric Column Statistics")
-    try:
-        numeric_stats = cached_numeric_stats(dataframe)
-        if numeric_stats is not None:
-            st.dataframe(numeric_stats, use_container_width=True)
-        else:
-            st.info("No numeric columns found in this dataset.")
-    except Exception as error:
-        st.error(f"Could not calculate numeric statistics: {error}")
+    # ==================== TAB 1: DATA ====================
+    with tab_data:
+        # -- Data Preview with sorting and export --
+        st.subheader("Data Preview")
+        st.write(f"Showing **{len(filtered_dataframe):,}** of **{rows:,}** rows")
 
-    # -- Categorical Column Statistics --
-    st.subheader("Categorical Column Statistics")
-    try:
-        categorical_stats = cached_categorical_stats(dataframe)
-        if categorical_stats is not None:
-            st.dataframe(categorical_stats, use_container_width=True)
-        else:
-            st.info("No categorical columns found in this dataset.")
-    except Exception as error:
-        st.error(f"Could not calculate categorical statistics: {error}")
+        # Sorting controls
+        sort_col1, sort_col2 = st.columns([3, 1])
+        with sort_col1:
+            sort_column = st.selectbox(
+                "Sort by",
+                options=["None"] + dataframe.columns.tolist(),
+                index=0,
+            )
+        with sort_col2:
+            sort_direction = st.radio(
+                "Direction",
+                options=["Ascending", "Descending"],
+                horizontal=True,
+            )
 
-    # --- Missing Data Analysis (Step 7) ---
-    st.subheader("Missing Data Analysis")
+        # Apply sorting
+        sort_by = None if sort_column == "None" else sort_column
+        ascending = sort_direction == "Ascending"
+        display_dataframe = sort_dataframe(filtered_dataframe, sort_by, ascending)
 
-    if dataframe.isnull().sum().sum() > 0:
+        # Show the filtered and sorted table
+        if len(display_dataframe) == 0:
+            st.warning("No rows match the current filters.")
+        st.dataframe(display_dataframe, use_container_width=True)
+
+        # Download button for filtered data
+        csv_bytes = cached_convert_csv(display_dataframe)
+        st.download_button(
+            label="Download filtered data as CSV",
+            data=csv_bytes,
+            file_name="filtered_data.csv",
+            mime="text/csv",
+        )
+
+        # Collapsible section for a quick peek at the first 5 rows
+        with st.expander("Show raw data (first 5 rows)"):
+            st.table(dataframe.head())
+
+        # -- Column Details --
+        st.subheader("Column Details")
         try:
-            missing_bar = cached_missing_bar_chart(dataframe)
-            if missing_bar is not None:
-                st.plotly_chart(missing_bar, use_container_width=True)
+            column_info = cached_column_info(dataframe)
+            st.dataframe(column_info, use_container_width=True)
         except Exception as error:
-            st.error(f"Could not create missing data bar chart: {error}")
+            st.error(f"Could not generate column details: {error}")
 
+    # ==================== TAB 2: STATISTICS ====================
+    with tab_stats:
+        # -- Numeric Column Statistics --
+        st.subheader("Numeric Column Statistics")
         try:
-            missing_heatmap = cached_missing_heatmap(dataframe)
-            if missing_heatmap is not None:
-                st.plotly_chart(missing_heatmap, use_container_width=True)
-        except Exception as error:
-            st.error(f"Could not create missing data heatmap: {error}")
-    else:
-        st.success("No missing data found in this dataset!")
-
-    # --- Automated Visualizations (Step 4) ---
-    st.subheader("Automated Visualizations")
-
-    # -- Histograms for numeric columns --
-    numeric_columns = dataframe.select_dtypes(include="number").columns.tolist()
-
-    if numeric_columns:
-        st.markdown("#### Distributions")
-        # Display histograms two per row for a clean grid layout
-        for i in range(0, len(numeric_columns), 2):
-            chart_cols = st.columns(2)
-            for j, chart_col in enumerate(chart_cols):
-                if i + j < len(numeric_columns):
-                    column_name = numeric_columns[i + j]
-                    try:
-                        fig = cached_histogram(dataframe, column_name)
-                        chart_col.plotly_chart(fig, use_container_width=True)
-                    except Exception as error:
-                        chart_col.error(f"Could not create histogram for {column_name}: {error}")
-
-    # -- Bar charts for categorical columns --
-    categorical_columns = dataframe.select_dtypes(exclude="number").columns.tolist()
-
-    if categorical_columns:
-        st.markdown("#### Value Counts")
-        for i in range(0, len(categorical_columns), 2):
-            chart_cols = st.columns(2)
-            for j, chart_col in enumerate(chart_cols):
-                if i + j < len(categorical_columns):
-                    column_name = categorical_columns[i + j]
-                    try:
-                        fig = cached_bar_chart(dataframe, column_name)
-                        if fig is not None:
-                            chart_col.plotly_chart(fig, use_container_width=True)
-                    except Exception as error:
-                        chart_col.error(f"Could not create bar chart for {column_name}: {error}")
-
-    # -- Correlation heatmap --
-    try:
-        heatmap_fig = cached_correlation_heatmap(dataframe)
-        if heatmap_fig is not None:
-            st.markdown("#### Correlation Matrix")
-            st.plotly_chart(heatmap_fig, use_container_width=True)
-    except Exception as error:
-        st.error(f"Could not create correlation heatmap: {error}")
-
-    # --- Interactive Scatter Plot (Step 5) ---
-
-    # Only show if there are at least 2 numeric columns to compare
-    if len(numeric_columns) >= 2:
-        st.subheader("Interactive Scatter Plot")
-
-        # Sidebar controls — grouped under a header for clarity
-        st.sidebar.header("Scatter Plot Controls")
-
-        x_axis = st.sidebar.selectbox(
-            "X-axis",
-            options=numeric_columns,
-            index=0,
-        )
-        y_axis = st.sidebar.selectbox(
-            "Y-axis",
-            options=numeric_columns,
-            index=1,
-        )
-
-        # Color-by is optional and can use any column (numeric or categorical)
-        all_columns = dataframe.columns.tolist()
-        color_option = st.sidebar.selectbox(
-            "Color by",
-            options=["None"] + all_columns,
-            index=0,
-        )
-        # Convert the string "None" to Python None for the function call
-        color_column = None if color_option == "None" else color_option
-
-        try:
-            scatter_fig = cached_scatter_plot(dataframe, x_axis, y_axis, color_column)
-            if scatter_fig is not None:
-                st.plotly_chart(scatter_fig, use_container_width=True)
+            numeric_stats = cached_numeric_stats(dataframe)
+            if numeric_stats is not None:
+                st.dataframe(numeric_stats, use_container_width=True)
             else:
-                st.warning("Could not create scatter plot with the selected columns.")
+                st.info("No numeric columns found in this dataset.")
         except Exception as error:
-            st.error(f"Could not create scatter plot: {error}")
+            st.error(f"Could not calculate numeric statistics: {error}")
 
-    # --- Time Series (Step 7) ---
-    datetime_columns = cached_detect_datetime_columns(dataframe)
+        # -- Categorical Column Statistics --
+        st.subheader("Categorical Column Statistics")
+        try:
+            categorical_stats = cached_categorical_stats(dataframe)
+            if categorical_stats is not None:
+                st.dataframe(categorical_stats, use_container_width=True)
+            else:
+                st.info("No categorical columns found in this dataset.")
+        except Exception as error:
+            st.error(f"Could not calculate categorical statistics: {error}")
 
-    if datetime_columns:
-        st.subheader("Time Series")
+        # -- Missing Data Analysis --
+        st.subheader("Missing Data Analysis")
+        if total_missing > 0:
+            try:
+                missing_bar = cached_missing_bar_chart(dataframe)
+                if missing_bar is not None:
+                    st.plotly_chart(missing_bar, use_container_width=True)
+            except Exception as error:
+                st.error(f"Could not create missing data bar chart: {error}")
 
-        # Sidebar controls for time series
-        st.sidebar.header("Time Series Controls")
+            try:
+                missing_heatmap = cached_missing_heatmap(dataframe)
+                if missing_heatmap is not None:
+                    st.plotly_chart(missing_heatmap, use_container_width=True)
+            except Exception as error:
+                st.error(f"Could not create missing data heatmap: {error}")
+        else:
+            st.success("No missing data found in this dataset!")
 
-        selected_date_col = st.sidebar.selectbox(
-            "Date column",
-            options=datetime_columns,
-            index=0,
-        )
+    # ==================== TAB 3: VISUALIZATIONS ====================
+    with tab_viz:
+        st.subheader("Automated Visualizations")
 
+        # -- Histograms for numeric columns --
         if numeric_columns:
-            selected_value_col = st.sidebar.selectbox(
-                "Value column",
+            st.markdown("#### Distributions")
+            for i in range(0, len(numeric_columns), 2):
+                chart_cols = st.columns(2)
+                for j, chart_col in enumerate(chart_cols):
+                    if i + j < len(numeric_columns):
+                        column_name = numeric_columns[i + j]
+                        try:
+                            fig = cached_histogram(dataframe, column_name)
+                            chart_col.plotly_chart(fig, use_container_width=True)
+                        except Exception as error:
+                            chart_col.error(f"Could not create histogram for {column_name}: {error}")
+
+        # -- Bar charts for categorical columns --
+        if categorical_columns:
+            st.markdown("#### Value Counts")
+            for i in range(0, len(categorical_columns), 2):
+                chart_cols = st.columns(2)
+                for j, chart_col in enumerate(chart_cols):
+                    if i + j < len(categorical_columns):
+                        column_name = categorical_columns[i + j]
+                        try:
+                            fig = cached_bar_chart(dataframe, column_name)
+                            if fig is not None:
+                                chart_col.plotly_chart(fig, use_container_width=True)
+                        except Exception as error:
+                            chart_col.error(f"Could not create bar chart for {column_name}: {error}")
+
+        # -- Correlation heatmap --
+        try:
+            heatmap_fig = cached_correlation_heatmap(dataframe)
+            if heatmap_fig is not None:
+                st.markdown("#### Correlation Matrix")
+                st.plotly_chart(heatmap_fig, use_container_width=True)
+        except Exception as error:
+            st.error(f"Could not create correlation heatmap: {error}")
+
+    # ==================== TAB 4: EXPLORE ====================
+    with tab_explore:
+        # -- Interactive Scatter Plot --
+        if len(numeric_columns) >= 2:
+            st.subheader("Interactive Scatter Plot")
+
+            # Sidebar controls — grouped under a header for clarity
+            st.sidebar.header("Scatter Plot Controls")
+
+            x_axis = st.sidebar.selectbox(
+                "X-axis",
                 options=numeric_columns,
                 index=0,
             )
+            y_axis = st.sidebar.selectbox(
+                "Y-axis",
+                options=numeric_columns,
+                index=1,
+            )
+
+            all_columns = dataframe.columns.tolist()
+            color_option = st.sidebar.selectbox(
+                "Color by",
+                options=["None"] + all_columns,
+                index=0,
+            )
+            color_column = None if color_option == "None" else color_option
 
             try:
-                line_fig = cached_line_chart(dataframe, selected_date_col, selected_value_col)
-                if line_fig is not None:
-                    st.plotly_chart(line_fig, use_container_width=True)
+                scatter_fig = cached_scatter_plot(dataframe, x_axis, y_axis, color_column)
+                if scatter_fig is not None:
+                    st.plotly_chart(scatter_fig, use_container_width=True)
                 else:
-                    st.warning("Could not create time series chart with the selected columns.")
+                    st.warning("Could not create scatter plot with the selected columns.")
             except Exception as error:
-                st.error(f"Could not create time series chart: {error}")
+                st.error(f"Could not create scatter plot: {error}")
         else:
-            st.info("No numeric columns available to plot over time.")
+            st.info("Need at least 2 numeric columns for a scatter plot.")
+
+        # -- Time Series --
+        if datetime_columns:
+            st.subheader("Time Series")
+
+            st.sidebar.header("Time Series Controls")
+
+            selected_date_col = st.sidebar.selectbox(
+                "Date column",
+                options=datetime_columns,
+                index=0,
+            )
+
+            if numeric_columns:
+                selected_value_col = st.sidebar.selectbox(
+                    "Value column",
+                    options=numeric_columns,
+                    index=0,
+                )
+
+                try:
+                    line_fig = cached_line_chart(dataframe, selected_date_col, selected_value_col)
+                    if line_fig is not None:
+                        st.plotly_chart(line_fig, use_container_width=True)
+                    else:
+                        st.warning("Could not create time series chart with the selected columns.")
+                except Exception as error:
+                    st.error(f"Could not create time series chart: {error}")
+            else:
+                st.info("No numeric columns available to plot over time.")
+
+        if len(numeric_columns) < 2 and not datetime_columns:
+            st.info("Upload a dataset with numeric or date columns to explore interactive charts.")
