@@ -69,3 +69,25 @@ def create_correlation_heatmap(df):
         title="Correlation Matrix",
     )
     return fig
+
+
+def create_scatter_plot(df, x_col, y_col, color_col=None):
+    """Create a scatter plot comparing two numeric columns.
+
+    Optionally color points by a third column (numeric or categorical).
+    Returns None if either x_col or y_col is missing from the DataFrame.
+    """
+    if x_col not in df.columns or y_col not in df.columns:
+        return None
+
+    fig = px.scatter(
+        df,
+        x=x_col,
+        y=y_col,
+        color=color_col,
+        title=f"{y_col} vs {x_col}",
+        labels={x_col: x_col, y_col: y_col},
+    )
+    # Only show legend when color grouping is active
+    fig.update_layout(showlegend=color_col is not None)
+    return fig

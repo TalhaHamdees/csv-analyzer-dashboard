@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from utils.data_profiler import get_column_info, get_numeric_stats, get_categorical_stats
-from utils.visualizations import create_histogram, create_bar_chart, create_correlation_heatmap
+from utils.visualizations import create_histogram, create_bar_chart, create_correlation_heatmap, create_scatter_plot
 
 
 # --- Cached wrappers ---
@@ -35,6 +35,11 @@ def cached_bar_chart(df, column_name):
 @st.cache_data
 def cached_correlation_heatmap(df):
     return create_correlation_heatmap(df)
+
+
+@st.cache_data
+def cached_scatter_plot(df, x_col, y_col, color_col=None):
+    return create_scatter_plot(df, x_col, y_col, color_col)
 
 
 # Page configuration — must be the first Streamlit command
@@ -171,3 +176,42 @@ if uploaded_file is not None:
             st.plotly_chart(heatmap_fig, use_container_width=True)
     except Exception as error:
         st.error(f"Could not create correlation heatmap: {error}")
+
+    # --- Interactive Scatter Plot (Step 5) ---
+
+    # Only show if there are at least 2 numeric columns to compare
+    if len(numeric_columns) >= 2:
+        st.subheader("Interactive Scatter Plot")
+
+        # Sidebar controls — grouped under a header for clarity
+        st.sidebar.header("Scatter Plot Controls")
+
+        x_axis = st.sidebar.selectbox(
+            "X-axis",
+            options=numeric_columns,
+            index=0,
+        )
+        y_axis = st.sidebar.selectbox(
+            "Y-axis",
+            options=numeric_columns,
+            index=1,
+        )
+
+        # Color-by is optional and can use any column (numeric or categorical)
+        all_columns = dataframe.columns.tolist()
+        color_option = st.sidebar.selectbox(
+            "Color by",
+            options=["None"] + all_columns,
+            index=0,
+        )
+        # Convert the string "None" to Python None for the function call
+        color_column = None if color_option == "None" else color_option
+
+        try:
+            scatter_fig = cached_scatter_plot(dataframe, x_axis, y_axis, color_column)
+            if scatter_fig is not None:
+                st.plotly_chart(scatter_fig, use_container_width=True)
+            else:
+                st.warning("Could not create scatter plot with the selected columns.")
+        except Exception as error:
+            st.error(f"Could not create scatter plot: {error}")
