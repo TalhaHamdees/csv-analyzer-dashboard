@@ -91,3 +91,86 @@ def create_scatter_plot(df, x_col, y_col, color_col=None):
     # Only show legend when color grouping is active
     fig.update_layout(showlegend=color_col is not None)
     return fig
+
+
+def create_missing_bar_chart(df):
+    """Create a horizontal bar chart showing missing data percentage per column.
+
+    Only includes columns that have at least one missing value.
+    Returns None if no columns have missing data.
+    """
+    missing_pct = (df.isnull().sum() / len(df) * 100).round(2)
+    # Keep only columns with missing data, sorted worst-to-best
+    missing_pct = missing_pct[missing_pct > 0].sort_values(ascending=True)
+
+    if missing_pct.empty:
+        return None
+
+    fig = px.bar(
+        x=missing_pct.values,
+        y=missing_pct.index,
+        orientation="h",
+        title="Missing Data by Column",
+        labels={"x": "Missing %", "y": ""},
+    )
+    fig.update_layout(showlegend=False)
+    return fig
+
+
+def create_missing_heatmap(df, max_rows=100):
+    """Create a heatmap showing where missing values are located.
+
+    Caps at max_rows to avoid performance issues with large datasets.
+    Only shows columns that have at least one missing value.
+    Returns None if no columns have missing data.
+    """
+    # Find columns that actually have missing data
+    cols_with_missing = [col for col in df.columns if df[col].isnull().any()]
+
+    if not cols_with_missing:
+        return None
+
+    # Cap rows for performance and build a binary matrix (1 = missing, 0 = present)
+    capped_df = df[cols_with_missing].head(max_rows)
+    actual_rows = len(capped_df)
+    missing_matrix = capped_df.isnull().astype(int)
+
+    fig = px.imshow(
+        missing_matrix.T,
+        color_continuous_scale=["#2196F3", "#FF5722"],
+        aspect="auto",
+        title=f"Missing Data Pattern (first {actual_rows} rows)",
+        labels={"x": "Row", "y": "Column", "color": "Missing"},
+    )
+    return fig
+
+
+def create_line_chart(df, date_col, value_col):
+    """Create a line chart showing a numeric value over time.
+
+    Parses the date column, drops unparseable rows, and sorts by date.
+    Returns None if either column is missing from the DataFrame.
+    """
+    if date_col not in df.columns or value_col not in df.columns:
+        return None
+
+    # Work on a copy to avoid modifying the original
+    plot_df = df[[date_col, value_col]].copy()
+    plot_df[date_col] = pd.to_datetime(plot_df[date_col], errors="coerce")
+
+    # Drop rows where the date couldn't be parsed
+    plot_df = plot_df.dropna(subset=[date_col])
+
+    if plot_df.empty:
+        return None
+
+    # Sort chronologically for a clean line
+    plot_df = plot_df.sort_values(by=date_col)
+
+    fig = px.line(
+        plot_df,
+        x=date_col,
+        y=value_col,
+        title=f"{value_col} over {date_col}",
+    )
+    return fig

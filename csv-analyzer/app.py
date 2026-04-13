@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
-from utils.data_profiler import get_column_info, get_numeric_stats, get_categorical_stats
-from utils.visualizations import create_histogram, create_bar_chart, create_correlation_heatmap, create_scatter_plot
+from utils.data_profiler import get_column_info, get_numeric_stats, get_categorical_stats, detect_datetime_columns
+from utils.visualizations import (
+    create_histogram, create_bar_chart, create_correlation_heatmap, create_scatter_plot,
+    create_missing_bar_chart, create_missing_heatmap, create_line_chart,
+)
 from utils.filters import get_filterable_columns, apply_filters, sort_dataframe, convert_df_to_csv
 
 
@@ -51,6 +54,26 @@ def cached_filterable_columns(df):
 @st.cache_data
 def cached_convert_csv(df):
     return convert_df_to_csv(df)
+
+
+@st.cache_data
+def cached_detect_datetime_columns(df):
+    return detect_datetime_columns(df)
+
+
+@st.cache_data
+def cached_missing_bar_chart(df):
+    return create_missing_bar_chart(df)
+
+
+@st.cache_data
+def cached_missing_heatmap(df, max_rows=100):
+    return create_missing_heatmap(df, max_rows)
+
+
+@st.cache_data
+def cached_line_chart(df, date_col, value_col):
+    return create_line_chart(df, date_col, value_col)
 
 
 # Page configuration — must be the first Streamlit command
@@ -221,6 +244,26 @@ if uploaded_file is not None:
     except Exception as error:
         st.error(f"Could not calculate categorical statistics: {error}")
 
+    # --- Missing Data Analysis (Step 7) ---
+    st.subheader("Missing Data Analysis")
+
+    if dataframe.isnull().sum().sum() > 0:
+        try:
+            missing_bar = cached_missing_bar_chart(dataframe)
+            if missing_bar is not None:
+                st.plotly_chart(missing_bar, use_container_width=True)
+        except Exception as error:
+            st.error(f"Could not create missing data bar chart: {error}")
+
+        try:
+            missing_heatmap = cached_missing_heatmap(dataframe)
+            if missing_heatmap is not None:
+                st.plotly_chart(missing_heatmap, use_container_width=True)
+        except Exception as error:
+            st.error(f"Could not create missing data heatmap: {error}")
+    else:
+        st.success("No missing data found in this dataset!")
+
     # --- Automated Visualizations (Step 4) ---
     st.subheader("Automated Visualizations")
 
@@ -305,3 +348,36 @@ if uploaded_file is not None:
                 st.warning("Could not create scatter plot with the selected columns.")
         except Exception as error:
             st.error(f"Could not create scatter plot: {error}")
+
+    # --- Time Series (Step 7) ---
+    datetime_columns = cached_detect_datetime_columns(dataframe)
+
+    if datetime_columns:
+        st.subheader("Time Series")
+
+        # Sidebar controls for time series
+        st.sidebar.header("Time Series Controls")
+
+        selected_date_col = st.sidebar.selectbox(
+            "Date column",
+            options=datetime_columns,
+            index=0,
+        )
+
+        if numeric_columns:
+            selected_value_col = st.sidebar.selectbox(
+                "Value column",
+                options=numeric_columns,
+                index=0,
+            )
+
+            try:
+                line_fig = cached_line_chart(dataframe, selected_date_col, selected_value_col)
+                if line_fig is not None:
+                    st.plotly_chart(line_fig, use_container_width=True)
+                else:
+                    st.warning("Could not create time series chart with the selected columns.")
+            except Exception as error:
+                st.error(f"Could not create time series chart: {error}")
+        else:
+            st.info("No numeric columns available to plot over time.")

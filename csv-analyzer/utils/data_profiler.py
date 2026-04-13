@@ -35,3 +35,46 @@ def get_categorical_stats(df):
         return None
     # include='all' ensures describe() works on text columns (not just numeric)
     return categorical_df.describe(include="all").T
+
+
+def detect_datetime_columns(df, sample_size=100):
+    """Identify columns that contain date/time values.
+
+    Samples the first sample_size rows for speed, then confirms on the full
+    column. A column qualifies if 50%+ of non-null values parse as dates.
+
+    Returns a list of column names (empty list if none found).
+    """
+    datetime_cols = []
+
+    for col in df.columns:
+        # Already a datetime column — include directly
+        if pd.api.types.is_datetime64_any_dtype(df[col]):
+            datetime_cols.append(col)
+            continue
+
+        # Only try parsing non-numeric columns (numbers aren't dates)
+        if pd.api.types.is_numeric_dtype(df[col]):
+            continue
+
+        # Skip columns with no data
+        non_null = df[col].dropna()
+        if len(non_null) == 0:
+            continue
+
+        # Quick check on a sample first
+        sample = non_null.head(sample_size)
+        parsed_sample = pd.to_datetime(sample, errors="coerce")
+        sample_success_rate = parsed_sample.notna().sum() / len(sample)
+
+        if sample_success_rate < 0.5:
+            continue
+
+        # Sample passed — confirm on the full column
+        parsed_full = pd.to_datetime(non_null, errors="coerce")
+        full_success_rate = parsed_full.notna().sum() / len(non_null)
+
+        if full_success_rate >= 0.5:
+            datetime_cols.append(col)
+
+    return datetime_cols
